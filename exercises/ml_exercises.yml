@@ -1,0 +1,10 @@
+name: ml_exercises
+dependencies:
+# usual modules
+  - pandas
+  - numpy
+# plotting
+  - matplotlib
+  - seaborn
+# to have access to the environment from jupyter lab
+  - ipykernel
