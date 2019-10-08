@@ -3,6 +3,9 @@ dependencies:
 # usual modules
   - pandas
   - numpy
+  - scipy
+# ML modules
+  - scikit-learn
 # plotting
   - matplotlib
   - seaborn
