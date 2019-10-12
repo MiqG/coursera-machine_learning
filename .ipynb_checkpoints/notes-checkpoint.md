@@ -251,15 +251,159 @@ And we perform exactly the same update of the parameters.
 ### Representation
 
 - Non-linear hypotheses
+
+To tackle non-linear problems we could combine features polynomically to get complex decision boundaries.
+However, for problems with many features initially we would be creating many more features that may lead to overfitting.
+In addition, we run into a combinatorial explosion problem.
+
+For example, in a computer vision problem, we need to train the model to recognize combinations of pixel intensity values, each of them would be a feature.
+
 - Neurons and the Brain
-- Neural Networks
-- Applications
+
+Neural networks were born trying to make machines mimic the brain.
+Since computers have improved a lot in the last years, the new computational powers allows.
+The **one learning algorithm** hypothesis says that if we connect the hearing neurons in the brain to the eyes we would learn how to hear what we see.
+
+- Model Representation:
+The neuron has input and output wires, dendrites and axon,that send the signal to another network.
+In a computer we use a **logistic unit** constituted of input values (data) and a hypothesis function that will result in different outputs depending on the parameters or weights.
+
+A neural network is a combination of multiple logistic units.
+
+The **input layer** is the layer of data that is interconnected to every **activation unit**$i$ in layer $j$ ($a_i^{(j)}$) if the first hidden layer and second layer of the network.
+
+To each activation unit corresponds a $\Theta^{(j)}$ matrix of weights controlling function mapping from layer $j$ to layer $j+1$.
+
+If the network has $s_j$ units in layer $j$ and $s_{j+1}$ units in layer $j+1$, then $\Theta^{(j)}$ will be of dimension $s_{j+1} x (s_j+1)$ because of the bias element in each activation function.
+
+The +1 comes from the addition in $\Theta^{(j)}$ of the bias nodes, $x_0$ and $\Theta_0^{(j)}$; the output nodes will not include the bias nodes while the inputs will
+
+In this case, the neural network defines a function $h$ that maps with $x$'s input values to some space that provisions $y$.
+
+These hypotheses are parameterized by parameters denoting with a capital $\Theta$ so that, as we vary $\Theta$, we obtain different hypothesis and different hypothesis functions.
+
+![](figures/fig_nn_desc.png)
+
+- Forward propagation: vectorized implementation
+      
+The output each hidden layer will be the input of the next layer, in this case, the hypothesis function.
+We call this process: **forward propagation**.
+
+This approach allows to transform the input features in complex ways according to the **network architecture**, without relying only on performing polynomial transformations.
+
+
+- Computing boolean operations: 
+Depending on the architecture and the parameters, we can represent boolean gates. 
+In the example below, only when $20x_1+20x_2>10$ the neuron will fire, creating an OR gate.
+    
+![](figures/fig_nn_bool.png)
+![](figures/fig_nn_bool_func.png)
+
+Combining layers we can increase the complexity of the computation between layers.
+
+![](figures/fig_nn_bool_xnor.png)
+
+- Multiclass classification
+
+I we want to recognize n categories from a dataset, the output layer will have n nodes that will output a vector of 0s and a 1 indicating which is the class predicted.
 
 ### Learning
 
 - Cost Function and Backpropagation
-- Backpropagation in Practice
-- Application
+
+The cost function that we use in neural networks, we generalize the the for K values that may be the output.
+
+$$J(\Theta) = -\frac{1}{m} \sum_{i=1}^{m}\sum_{i=k}^{K} [y_{k}^{(i)} log((h_{\Theta}(x^{(i)}))_{k})+(1-y_{k}^{(i)})log)(1-(h_{\Theta}(x^{(i)}))_{k})] + \frac{\lambda}{2 m} \sum_{l=1}^{L-1} \sum_{i=1}^{s_l} \sum_{j=1}^{s_{l+1}} (\Theta_{j,i}^{(l)})^2$$
+
+The *double sum* simply adds up the logistic regression costs calculated for each cell in the output layer
+The *triple sum* simply adds up the squares of all the individual Θs in the entire network.
+
+Remember that in each layer we add a bias and we do not sum it at the regularization term.
+
+- Backpropagation algorithm in Practice
+
+To compute the gradient term (partial derivative given $\Theta$).
+
+In the forward algorithm we multiply the parameters of each layer, $\Theta^{(l)}$ matrix, with the output of the previous layer with a new bias term, $a^{(l)} = g(z^{(l-1))}$.
+
+Now, the **output layer** results in a vector $\delta^{(l)} = a^{(l)} - y$, which is the difference between the output of the layer and the real values, $y$.
+
+Then, we move backwards through the layers to keep computing the gradient. In each **hidden layer**, we compute the gradient of the layer, $\delta^{(l-1,...,l)}$, we compute the dot product of the parameter matrix of the hidden layer ($\Theta$) with the gradient computed before (layer after in the architecture), and multiply the resulting vectors elementwise with the derivative of the hypothesis function of the actual layer. For example, for the layer before the output layer: 
+
+$$\delta^{(l-1)} = (\Theta^{(l-1)})^T \delta^{(l)} .* g'(a^{(l-1)}) $$
+
+To implement it, we create a matrix, $\Delta_{ij}^{(l)}$, to store the $\delta^(l)$.
+Then, we perform forward propagation to compute all $a^{(l)}$ for $l=2,3,...,L$.
+Subsequently, using $y^{(i)}$, we compute $\delta^(L)=a^{(L)}-y^{(i)}$, and use it to perform backwards propagation computing $\delta^{(L-1)},\delta^{(L-2)},...,\delta^{(2)}$.
+Finally, we update the matrix of $\delta^{(l)}$s with:
+
+$$\Delta^{(l)} = \Delta^{(l)} + \delta^{(l+1)}(a^{(l)})^T$$
+
+We implement regularization through updating matrix $D$:
+
+$$D_{ij}^{(l)}:= \frac{1}{m} \Delta_{ij}^{(l)} + \lambda \Theta_{ij}^{(l)}~~if~~j\neq0$$
+
+$$D_{ij}^{(l)}:= \frac{1}{m} \Delta_{ij}^{(l)}~~if~~j=0$$
+
+Thus,
+
+$$\frac{\partial}{\partial\Theta_{ij}^{(l)}}J(\Theta)=D_{ij}^{(l)}$$
+
+![](figures/fig_nn_bp.png)
+
+
+- Backpropagation intuition
+
+In forward propagation, each node uses a set of weights to retrieve an the output $z^{(l)}$.
+In backpropagation, we compute the error of the final prediction through $\delta^{(L)}$ and propagate it to the rest of the network to tune it for best performance.
+
+- Implementation
+
+It is recommended to unroll the $\Theta^{(l)}$ parameters into one big vector to compute to use available optimization functions.
+
+- Gradient checking
+
+To be sure that our implementation is correct, we carry out a gradient checking to be sure that the algorithm is computing the derivative of $J(\Theta)$.
+We can approximate the slope by:
+ 
+$$\frac{\partial}{\partial\Theta} J(\Theta) \approx \frac{J(\Theta+\epsilon)-J(\Theta-\epsilon)}{2 \epsilon}$$
+ 
+The smaller $\epsilon$ the better the approximation of the slope (i.e. $\epsilon = 10^{-4}$).
+
+To check the gradient for each partial derivative we compute the same fraction of the cost function adding $\epsilon$ sequentially to each $\Theta_j$:
+
+$$\frac{\partial}{\partial\Theta} J(\Theta) \approx \frac{J(\Theta_1,...,\Theta+\epsilon,...,\Theta_n)-J(\Theta_1,...,\Theta_j-\epsilon,...,\Theta_n)}{2 \epsilon}$$
+ 
+Once you have verified once that your backpropagation algorithm is correct, you don't need to compute gradApprox again. The code to compute it can be very slow.
+
+- Random Initialization
+
+Initializing all theta weights to zero does not work with neural networks. When we backpropagate, all nodes will update to the same value repeatedly. 
+
+Thus, to break symmetry, we initialize each value in $\Theta$ with random number between a boundary (e.g. 0 to 1).
+
+- Summary
+    - Use a single hidden layer as default. More hidden layers usually have the same number of input units (nodes).
+    - In general, the first hidden layer has more input units than the input layer.
+    - To train a neural network:
+        1. Randomly initialize weights
+        2. Implement FP to get $h_{(\Theta)(x^{(i)})} for any $x^{(i)}$
+        3. Implement code to compute cost function $J(\Theta)$
+        4. Implement BP to compute partial derivatives $\frac{\partial}{\partial \Theta_{jk}^{(l)}}J(\Theta)$
+        5. Use gradient checking to compare  $\frac{\partial}{\partial \Theta_{jk}^{(l)}}J(\Theta)$ computed using BP vs. using numerical estimate of the gradient of $J(\Theta)$. Disable gradient checking afterwards.
+        6. Use gradient descent or another advanced optimization method with backpropagation to try to minimize the non-convex cost function. Since this not a convex problem we may not find the global minimum.
+
+When we perform forward and back propagation, we loop on every training example:
+
+>  
+    for i = 1:m,
+    Perform forward propagation and backpropagation using example (x(i),y(i))
+    (Get activations a(l) and delta terms d(l) for l = 2,...,L
+
+
+- Application: autonomous driving
+
+
 
 ## Advice for Applying Machine Learning
 ### Evaluating a Learning Algorithm
