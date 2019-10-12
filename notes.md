@@ -407,16 +407,153 @@ When we perform forward and back propagation, we loop on every training example:
 
 ## Advice for Applying Machine Learning
 
+We need to be able to choose which are the arguments for best improvement of the algorithm.
+
+- Get more training examples
+- Select sets of features to avoid overfitting
+- Try additional features
+- Try polynomial features
+- Changing $\lambda$ (regularization constant)
+
 ### Evaluating a Learning Algorithm
+
+- Evaluating a hypothetsis
+
+To start diagnosing our model, we should evaluate our hypothesis.
+To know if a hypothesis is overfitting we should split the available data in **training** and **test sets**.
+Usually the division is $\frac{2}{3}$ for training and $\frac{1}{3}$ for testing.
+
+Therefore, if our model is overfitting the data we compute the **test set error**, which corresponds to the cost function $J(\Theta)$ of the model predictions ($h_{\theta}(x_{test})$) and real output ($y_{test}$).
+
+- Model selection and Train/Validation/Test sets
+
+To perform model selection, we could consider across models that have different polynomial degrees.
+For each combination of parameters we measure the performance on the test set.
+However this would not be a good estimate of how the model generalizes because if we test it only once it could be just an optimistic estimate of the generalization error.
+
+Therefore, we usually split the dataset in 3 pieces: training set (60%), cross validation (20%), test set (20%).
+
+Now we will optimize the parameters using the training set.
+Then, we will test this hypothesis in the cross validation set.
+Finally, to know how well the model generalizes, we validate the best model according to the cross validation set error using the test set of observations.
+We expect a lower $J_{test}(\theta)$ than $J_{CV}(\theta)$ because in the model selection we will be fitting another variable (model complexity; i.e. polynomial degree).
 
 ### Bias vs. Variance
 
+When a model has a high bias it underfits the data, with high variance it overfits the data; we are looking for the "just right" fit.
 
+To visualize bias and variance, we can plot the error vs. the degree of the polynomial $d$ (model complexity).
+
+The training error will decrease with d, while the cross validation error will show a minimum.
+
+If our model suffers from a *bias* problem the training error will be high and similar to the cross validation error.
+
+Differently, if we suffer of overfitting, the training error will be low and very different from the cross validation error.
+
+![](figures/fig_biasvar.png)
+
+- Regularization and Bias/Variance
+
+To prevent overfitting we implement regularization with a large $\lambda$, howevers we may cause an underfit.
+Otherwise, if $\lambda$ is too high we would cause overfitting.
+
+To select the right $\lambda$. Usually, we can test a list of 10 different values.
+For each $\lambda$, we can fit the model, use all the parameters to calculate the cross validation error, pick the lowest and compute the test error.
+
+We can directly select the model that minimizes the cross validation error.
+
+![](figures/fig_lambda_cost.png)
+
+- Learning curves
+
+Learning curves help understanding if our model suffers from high bias or variance.
+We will train the model with increasing number of training set size.
+We can plot how the training error will increase with higher training set size, while the cross validation error will decrease.
+
+With high bias (underfitting), the cross validation error will plateau soon and the training error will be initially small and end up being a similar value than the cross validation error.
+If our model is highly biased, we do not need to train it with more data.
+
+![](figures/fig_learncurve_bias.png)
+
+Conversely, if our model has high variance (overfitted), as the training set size increases the training error will be low while the cross validation error will plateau at a high value leaving a gap between the two curves.
+
+In this case, training with more data we would usually improve the performance of the algorithm.
+
+![](figures/fig_learncurve_var.png)
+
+
+- Deciding what to try next
+    - getting more training examples: fixes variance
+    - smaller sets of features: fixes high variance
+    - additional features: fixes high bias
+    - adding polynomial features: fixes high bias
+    - decreasing $\lambda$: fixes high bias
+    - increasing $\lambda$: fixes high variance
+    
+Neural networks have many parameters and tend to overfitting. 
+Increasing the number of hidden layers may fix high bias.
 
 ## Machine Learning System Design
 ### Building a spam filter
+
+Through a supervised learning approach, we need to define $x$ as the features of the email (e.g. 100 words indicative of spam vs. not spam, most frequent words in each labelled case) and $y$ as spam (1) or not (0).
+
+- how to minimize the error:
+    - collect lots of data
+    - develop sophisticated features based on email routing information
+    - develop sophisticated features for message body, e.g. plurals and singulars treated as the same word, capitalized, punctuation, etc.
+    - develop sophisticated algorithm to detect misspellings.
+    
+- Error analysis
+
+To start, we should implement a simple algorithm to test it on cross-validation data.
+Then, we should plot **learning curves** to decide whether we should include more data or features that are likely to help.
+Finally, through **error analysis** we should manually examine the examples from the cross-validation set that our algorithm made errors on and try to spot any systematic trend in what type of examples it is making errors on.
+
+For example, we have 500 examples in our cross validation set.
+We built an algorithm that misclassifies 100 emails.
+Now, we should check whether those errors are from a certain type of sender or whether it they may have any feature that could help classification.
+
+Numerical evaluation is extremely important; we need to use error metrics to decide about the performance with the different features or changes that we are introducing (e.g. does the error decrease if we distinguish between lower and upper case?).
+
+
 ### Handling Skewed Data
+
+When data is skewed (unbalanced classes), it is difficult to measure the error.
+If our algorithm makes 99.2% accuracy to 99.5% accuracy; it is not clear if the classification has improved because we have unbalanced classes.
+
+- Precision/Recall
+We compute a contingency table with True Positive, False Positive, False Negative, True Negative.
+
+$$Precision = \frac{True Positive}{# predicted prositive} = \frac{True Positive}{True Positive + False positive}$$
+
+$$Recall = \frac{True Positive}{# actual positives} = \frac{True Positive}{True positives + False negatives}$$
+
+- Trading off precision and recall
+
+In a logistic regression with a decision threshold, we may increase the treshold to be very sure that a patient has cancer (avoid false positives).
+In this case the precision will increase but the recall will decrease.
+
+Conversely, to avoid too many cases of cancer (avoid false negatives), we could decrease the threshold increasing the recall but decreasing precision.
+
+We can plot precision vs. recall with different thresholds. Ideally we would like to have a straight line.
+
+How can we can we merge precision and recall into one score?
+Instead of using the average, we may use the **$F_1$ Score** $=2\frac{PR}{P+R}$ that goes from 0 (bad) to 1 (perfect).
+
+
 ### Using Large Data Sets
+
+How much data should we train on? On certain conditions training with a lot of data may be positive to get a high accuracy model.
+
+Banko and Brill (2001) compared how different algorithms improved accuracy by increasing the training set size.
+
+The rationale in large data approaches is that we **assume that the feature $x \Epsilon R^{(n+1)}$ has sufficient information to predict y accurately**; to ensure low bias.
+
+If we use a learning algorithm with lots of parameters that can fit complex functions, with many observations it is unlikely that the models overfits; ensuring low variance.
+
+
+
 ## Support Vector Machines (SVM)
 ### Large Margin Classification
 ### Kernels
