@@ -4,6 +4,8 @@ dependencies:
   - pandas
   - numpy
   - scipy
+# NLP
+  - nltk
 # ML modules
   - scikit-learn
 # plotting

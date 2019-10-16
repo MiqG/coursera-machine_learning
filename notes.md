@@ -555,19 +555,184 @@ If we use a learning algorithm with lots of parameters that can fit complex func
 
 
 ## Support Vector Machines (SVM)
+
+Support vector Machines is an algorithm that is born from logistic regression. In the cost function of logistic regression, when y=1, only the first term of the equation retrieves a high value while if z (the prediction) is small.
+
+
 ### Large Margin Classification
+
+- Intuition
+
+SVM cost function is a constituted by two straight lines: horizontal and diagonal. The cost function to be minimized contains is parametrized differently; it contains two inner cost functions that act as **hypothesis functions** and are not generally averaged; instead they have a constant $C$.
+
+In this case, the SVM hypothesis function only predicts 1 or 0 given X and $\theta$.
+
+$$\min_{\theta} C \sum_{i=1}^{m} [y^{(i)}cost_1(\theta^T x^{(i)}) + (1-y^{(i)}) cost_{0}(\theta^T x^{(i)}))] + \frac{1}{2} \sum_{i=1}^{n}\theta_{j}^2$$
+
+Then, if y=1, cost(z)=0 we want $z \geq  1$ to reach a minimum of the cost function. Conversely, if y=0, to have cost(z)=0 we want $z \geq  -1$.
+
+The SVM algorithm tries to separate the data trying to create a decision boundary that results with the margin that best separates the data.
+Therefore, if there are outliers within the data, we would be more robust to them because they would not lead to the best separation overall.
+
+The highest is C, the less regularized will be our model.
+
+- Mathematics Behind Large Margin classification
+
+![]()
+
 ### Kernels
+
+When we need to create a non-linear decision boundary, a part from polynomial transformation, given $x$, we can compute the new feature depending on **proximity landmarks** $l^{(1)}, l^{(2)}, l^{(3)}$. Then, we use $x$ and $l^{(i)}$ to compute a **similarity kernel** (e.g. Gaussian kernels = $exp(-\frac{||x-l^{(i)}||^{2}}{2\sigma^{2}})$).
+
+If $x\approx l^{(i)}$ then, the kernel will be 1. And 0 otherwise. Each landmark defines a feature.
+
+$\sigma^{2}$ is the variance and creates a more or less steep similarity output. The larger sigma the larger the distribution of the landmark.
+
+Since similarity kernels have different landmarks, for points near to the landmark it will predict 1 and 0 for those that are far, creating a non-linear and complex decision boundaries.
+
+- Choosing the landmarks
+
+We choose the landmarks to be at each point of x. Then, instead of represent the sample data as a vector of f (feature vector).
+Therefore, we predict $y=1$ if $\theta^{T}f \geq 0$, and 1 otherwise.
+
+So the formula changes to:
+
+$$\min_{\theta} C \sum_{i=1}^{m} [y^{(i)}cost_1(\theta^T f^{(i)}) + (1-y^{(i)}) cost_{0}(\theta^T f^{(i)}))] + \frac{1}{2} \sum_{i=1}^{n}\theta_{j}^2$$
+
+Now, we can compute the regularization term as a vector multiplication since $\theta$ is a vector of parameters.
+
+- SVM parameters:
+    - C ($=\frac{1}{\lambda}$): large C: lower bias, high variance.
+    - $\sigma^2$: if large, the features $f^{(i)}$ vary more smoothly; higher bias, lower variance.
+
 ### SVMs in Practice
+
+It is recommended to use already optimized libraries.
+We need to specify the parameter C and the choice of kernel.
+
+- Kernel choices:
+    - No kernel (linear kernel)
+    - Polynomial kernel:$k(x,l)=(x^T l)^2$ or $k(x,l)=(x^T l + constant)^2$
+    - Gaussian kernel: provide the function that transforms the data accordingly. Normalization of the data is very important in this case because we compute the squared.
+    $$f^{(i)} = exp(-\frac{||x^{(i)}-l^{(i)}||^{2}}{2\sigma^{2}})$$
+
+- Multi-class classification
+We can perform aone-vs-all method: re-label the data into 1s and 0s for each class in y, store the optimized parameters in each case and classify according to the maximum prediction.
+
+- Logistic regression s SVMs
+
+Depending on the the number of features ($n$) and the number of observations ($m$):
+
+- $n$ is large, it is better to use logistic regression or SVM without a kernel
+- $n$ is small and the amount of data ($m$) is intermediate: SVMs with Gaussian kernel
+- $n$ is small and $m$ is large: create more features, and use logistic regression or SVM without a kernel.
+
+A neural network can work well most likely in all cases, but it may be slower to train.
+
+What matter the most is the capability of troubleshooting.
+
 ## Unsupervised Learning
+
+We are given data without labels attached to it. We ask the algorithm to find patterns or structures in data.
+
+Clustering has applications for market segmentation, social network analysis, organize computer clusters or astronomical analysis.
+
 ### Clustering
+- K-means
+
+We initialize the algorithm with $k$ **cluster centroids**. Then, we compute the distance of the points to each centroid and divide the data points into $k$ groups, subsequently, we move the centroid into the average of the data in each group until the data points do not change the assigned group.
+
+- Optimization objective
+
+We need to optimize the average distance between the class centroid and its assigned instances:
+
+$$J(c^{(m)},\mu_{K}) = \frac{1}{m} \sum_{i=1}^{m} ||x^{(i)}-\mu_{c^{(i)}}||^2$$
+
+- Random initialization
+
+We should have the number of clusters K lower than the m number of samples.
+To initialize the centroids, we could use data points randomly.
+We can get to different solutions in each iteration, getting stuck at different local optima.
+There is no guarantee of finding the global optima.
+By initializing K-means many times (50-1000 Monte Carlo simulations depending on the K classes) we hope to get closer to the global optimum more likely.
+
+- Choosing the number of clusters
+
+Choosing the number of clusters is not a simple task because it depends on the type of answers that we want to have.
+
+Generally, we plot the values of the cost function vs. the number of clusters and look for the elbow, where the minimum of the cost functions starts leveling.
+
+If the elbow is not clear, it might indicate that the choice is ambiguous or that data could not be well separated with the given features.
+Therefore, we should select K according to how well the choice performs in our downstream purposes.
+
 ## Dimensionality Reduction
+
+- Data compression
+
+When we have a dataset with many features, there might be some features that are highly correlated and thus it is not necessary to have 2 if 1 already explains the data well enough (e.g. measurements in inches or centimeters).
+
+Therefore, we may combine the features into one and achieve data compression by projecting data points on a function, for example.
+
+With a 3D dataset, we can represent data only as a 2D plane with 2 new features instead of 3.
+
+- Data Visualization
+
+We can combine features to visualize data in 2 dimensions.
+The axis lose indirectly combined the information in the features of each data point.
+
 ### Principal Component Analysis
+- Problem Formulation
+
+PCA tries to find a low dimension projection of the data that best summarizes is features.
+
+For each dimension of the data, PCA finds a vector that minimizes the projected error on data with the condition that each vector is orthogonal (not correlated) to each other.
+
+Differently, than in linear regression PCA minimizes the MSE of the projections of the data points on a vector while linear regression does it in the direction of the y variable.
+
+- Algorithm
+
+Given a training set x.
+1. Preprocessing (feature scaling or mean normalization).
+2. Find the vector matrix $U$ with a set of vectors $u$ that minimize the Mean Squared Error of the projections of the data on each vector, with the condition that each vector for the next dimension is orthogonal:
+    1. Compute **covariance matrix**:
+    $$\Sigma = \frac{1}{m} \sum_{i=1}^{n} (x^{(i)})(x^{(i)})^T = \frac{1}{m}X^T*X$$
+    2. Compute the **eigenvectors** of matrix $\Sigma$:
+    $$Xv = \lambda v$$
+
 ### Applying PCA
+- Reconstruction from Compressed Representation
+
+Since $z = U_{reduce}^T x$ then, $x_{approx} \approx U_{reduce} z$
+
+- Choosing the number of Principal Components
+
+PCA minimizes the MSE.
+We can also measure the total variance in the data.
+Then, as a rule of thumb, we choose $k$ to be the smallest value so that:
+
+$$ \frac{ \sum_{i=1}^{m} ||x^{(i)} - x_{approx}^{(i)}||^{2} }{\sum_{i=1}^{m} ||x^{(i)}||^{2}} \geq 0.01$$
+So 99% of the variance is retained.
+
+We can access this vale using the variance diagonal matrix $S$ resulting from computing the eigenvalues.
+
+- Advice for applying PCA
+
+If we have a supervised problem with images (100x100 pixels), we can reduce the dimensionality of 10'000 to a lower number of dimensions that retains a considerabe amount of variance of the data getting rid of uninformative noise that probably does not help data to train the model which becomes faster to train.
+
+We only need to apply it to the training set and reapply the mapping of the training set to the cross-validation and test sets.
+
+Don't address overfitting with PCA, better to use it changing the regularization parameter.
+
+Before implementing PCA, run the algorithm with original data, and implement PCR only if that does not work as we want or as fast as we want.
+
 ## Anomaly detection
 ### Density Estimation
 ### Building an Anomaly Detection System
 ### Multivariate Gaussian Distribution
+
 ## Large Scale Machine Learning
 ### Gradient Descent with Large Datasets
 ### Advanced topics
+
+
 ## Application Example: Photo OCR
