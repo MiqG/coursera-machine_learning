@@ -726,13 +726,272 @@ Don't address overfitting with PCA, better to use it changing the regularization
 Before implementing PCA, run the algorithm with original data, and implement PCR only if that does not work as we want or as fast as we want.
 
 ## Anomaly detection
+
+This is not a commonly used ML algorithm. For example, we have a series of aircraft engine features with different examples.
+
+How can we tell if an engine is or not anomalous?
+
+In this kind of problems we perform a **density estimation** of the multidimensional features to predict the probability of an example to be or not anomalous.
+
+Another case is anomaly detection of transactions.
+
 ### Density Estimation
+
+- Gaussian or Normal Distribution
+
+$$x \sim N(\mu,\sigma^2)$$
+$$P(x| \mu, \sigma^2) = \frac{1}{\sqrt{2\pi}~\sigma} exp(- \frac{(x-\mu)^2}{2 \sigma^2})$$
+
+The Gaussian Probability Density distribution has $\mu$ mean and $\sigma^2$ variance.
+
+The parameter optimization problem in this cases is, assuming normal distribution of the features, to estimate what are the values of the Gaussian distribution parameters ($\mu$, $\sigma^2$).
+
+We can estimate the parameters from the data computing the maximum likelihood. In general:
+
+$$\mu = \frac{1}{m} \sum_{i=1}^{m} x^{(i)}$$
+$$\sigma^2 = \frac{1}{m} \sum_{i=1}^{m} (x^{(i)}-\mu)^2$$
+
 ### Building an Anomaly Detection System
+
+We have a training set of $m$ examples with $n$ features. We want to model $P(X)$ that predicts a $n$ dimensional Joint Probability Distribution of Gaussian distributions.
+
+We consider a JPD: 
+
+$$ P(X) = \prod_{j=1}^{n} P(x_j | \mu_j,\sigma_{j}^{2})$$
+
+Note that we are assuming independence between the features.
+
+- Algorithm
+
+1. Choose features $x_i$ that you think might be indicative of anomalous examples.
+2. fit parameters $\mu_j$ and $\sigma_j^2$ for each feature.
+3. Then, given a new example we will compute P($x_{new}$) with the previously fitted parameters. We will consider it an anomaly if $P(X_new)< \epsilon$, where $\epsilon$ is a threshold or decision boundary.
+
+- Developing and Evaluating an Anomaly Detection System
+
+We assume that we have some labeled data, although we assumed this was an unsupervised learning algorithm.
+Therefore, we have training, cross-validation and testing data sets.
+
+Usually the data is very skewed towards non-anomalous examples. In this case, we would only use non-anomalous data in the training set and the same anomalous in the cross-validation and testing sets.
+
+- Evaluation algorithm
+
+1. Fit model on training set
+2. Use cross-validation to predict anomalies
+3. Possible evaluation metrics: (NOTE! accuracy will not be a good metric due to skewed classes)
+    - Precision/Recall
+    - F1 Score
+4. Use cross-validation set to choose $\epsilon$
+5. Use test set for final evaluation
+
+- Anomaly Detection vs. Supervised Learning
+
+    - Pros
+        - When classes are very skewed.
+    - Cons
+        - Many different *types* of anomaly: it is hard for an algorithm to learn from positive examples what the anomalies look like, so future anomalies may look nothing like any of the anomalous examples we have seen so far. Conversely, in supervised learning, we have enough positive examples for algorithm to get a sense of what positive examples are.
+        
+- Feature Selection
+    - Plot data to be sure whether data is gaussian. If the data is not gaussian, we can trainsform it (e.g. $log()$,$\sqrt()$)
+    - Create new features $\rightarrow$ Error Analysis
+    - Which features may take unusually large or small values in the event of an anomaly $\rightarrow$ combine them to create a new feature that highlights their effect.
+
 ### Multivariate Gaussian Distribution
 
+Our JPD assumes that each Gaussian distribution is independent. But, if the variables are indeed correlated we should use a multivariate Gaussian distribution to include the interaciton between the variables:
+
+$$P(x | \mu, \Sigma) = \frac{1}{(2\pi)^{\frac{n}{2}} |\Sigma|^{\frac{1}{2}}} exp(- \frac{1}{2}(x-\mu)^T \Sigma^{}-1 (x-\mu))$$
+
+- Anomaly detection with Multivariate Gaussian Distribution
+
+1. Fit $P(X)$ parameters estimating:
+
+$$\mu = \frac{1}{m} \sum_{i=1}^{m} x^{(i)}$$
+$$\Sigma = \frac{1}{m} \sum_{i=1}^{m} (x^{(i)}-\mu)(x^{(i)}-\mu)^T$$
+
+2. Apply MGD formula to predict probability of a point and establish a threshold to detect the anomaly.
+
+Indeed, the previous model was considering $\Sigma$ as a diagnoal matrix.
+
+The only problem of MGDs is computing $\Sigma^{-1}$ if there are many parameters. As a rule of thumb we should have 10 times more observations than features to use MGD.
+
+### Predictiong Movie Ratings
+
+- Problem Formulation
+
+We have different users that rate movies according to their tastes.
+They have not seen all possible movies, so based on their previous ratings and others' ratings we would like to predict what would be their rating for the movies that they haven't seen yet, to recommend them or not.
+
+- Content Based Recommendations
+
+A part from the rating of the users, we add features that explain the content (e.g. romance, action) of a movie.
+
+We can treat each user j as a single linear regression problem; each user would have a parameter vector.
+
+$r(i,j)=1$ if user $j$ has rated movie $i$ (0 otherwise).
+$y^{(i,j)}=$ rating by user $j$ on movie $i$ (if defined).
+$\theta^{(j)} =$ parameter vector for user $j$.
+$x^{(i)} =$ feature vector for movie $i$.
+For user $j$, movie $i$, predicted rating: $(\theta^{(j)})^T(x^{(i)})$
+$m^{(j)} =$ no. movies rated by user $j$.
+We need to learn $\theta^{(j)}$.
+
+Optimization objective:
+
+$$\min_{\theta^{(1)},...,\theta^{(n_u)}} \frac{1}{2} \sum_{j=1}^{n_u} \sum_{i:r(i,j)=1} ((\theta{(j)})^T x^{(i)} - y^{(i,j)})^2 + \frac{\lambda}{2} \sum_{(j=1)}^{n_u} \sum_{(k=1)}^{n} (\theta_{k}^{(j)})^2$$
+
+Remember that we do not include the bias in the regularization.
+
+The partial derivatives for the update correspond to:
+
+$$\sum_{i:r(i,j)=1} ((\theta^{(j)})^T x^{(i)} - y^{(i,j)})x_{k}^{(i)}~~(for~k = 0)$$ 
+
+$$\sum_{i:r(i,j)=1} ((\theta^{(j)})^T x^{(i)} - y^{(i,j)})x_{k}^{(i)} + \lambda \theta_{k}^{(j)}~~(for~k \neq 0)$$ 
+
+
+### Collaborative Filtering
+
+Suppose we have a dataset without knowing whether movies are romantic or action. We can learn features from the ratings directly, we can infer the values of the features for each movie, if users previously states their movie preferences.
+Therefore, we can fit the feature vectors for which we can fit the predicted values of how each user rates a movie.
+
+In this case, the problem is the opposite given $\theta$ predict $x_j$, we can do the opposite again, and repeat to optimize both.
+
+- Algorithm to solve $\theta$ and $x$ simultaneously:
+1. Initialize $x$ and $\theta$ with small random values
+2. Minimize:
+     - Cost/Objective Function:
+     $$\min_{\theta^{(1)},...,\theta^{(n_u)}} \frac{1}{2} \sum_{(i,j):r(i,j)=1} ((\theta{(j)})^T x^{(i)} - y^{(i,j)})^2 + \frac{\lambda}{2} \sum_{(i=1)}^{n_m} \sum_{(k=1)}^{n} (x_{k}^{(i)})^2 + \frac{\lambda}{2} \sum_{(j=1)}^{n_u} \sum_{(k=1)}^{n} (\theta_{k}^{(j)})^2$$
+     Learning the features this way, there is no need to hard code the feature $\theta_0$
+     - Gradients:
+     $$\sum_{j:r(i,j)=1} ((\theta^{(j)})^T x^{(i)} - y^{(i,j)})\theta_{k}^{(j)} + \lambda x_{k}^{(i)}$$
+     $$\sum_{i:r(i,j)=1} ((\theta^{(j)})^T x^{(i)} - y^{(i,j)})x_{k}^{(i)} + \lambda \theta_{k}^{(j)}$$
+     
+     
+### Low Rank Matrix Factorization
+
+- Making predictions
+
+How can we give recommendations on what other movies other users might like?
+
+We can make predictions with $(\theta^{(j)}^T(X^{(i)}}))$ or in the vectorized way: $X \Theta^T$.
+
+- Finding related examples
+
+Predict distances between movies.
+
+- Implementation Details: Mean Normalization
+
+If a user has not rated any movies, we will want to learn 2 features for a user that has not rated any movies, we would get parameters optimize to 0.
+It does not seem very useful.
+
+With mean normalization, we compute the average rating of each movie. Then we perform mean substraction to the Y matrix of examples.
+Now, each movie has an average rating of 0. We will use the mean normalized movie ratings and use the means to make predictions.
+
 ## Large Scale Machine Learning
+
+We want to use large datasets to train algorithms with low bias. However, with larger datasets, the computational expenses increase dramatically.
+
+Remember that plotting the learning curves we could know whether we do need so much data. Only, when the training and cross-validation learning curves show high variance and no bias.
+
 ### Gradient Descent with Large Datasets
+
+In gradient descent with linear regression, the most expensive computations is the sum over all examples in the gradient for parameter update.
+
+We can perform **batch gradient descent**.
+
+- Batch/Stochastic Gradient Descent
+
+We randomly shuffle all examples.
+We measure how well the cost function performs in one example: $$cost(\theta, (x^{(i)},y^{(i)})) = \frac{1}{2} (h_{\theta}(x^{(i)})-y^{(i)})^2$$
+$$J_{train} = \frac{1}{m} \sum_{i=1}^{m} cost(\theta,(x^{(i)}),y^{(i)})$$
+
+The algorithm modifies the parameters after each training example. Instead than performing updates based on multiple parameters. In this case, the algorithm for optimization moves randomly towards the optimum, usually it just ends up close to the global minimum of the cost function.
+
+- Mini-Batch Gradient descent
+
+We use $b$ examples in each iteration, usually, from 2 to 100 to perform a batch update.
+It is an intermediate approach. Remember to use vectorization.
+
+- Stochastic Gradient Descent Convergence
+
+We can plot the example costs after a large number of iterations. Usually, it will look very noisy.
+Use it to increase or decrease the learning rate ($\alpha$) accordingly.
+
+In the stochastic implementations of gradient descent an make it converge to a global minimum, we should decrease $\alpha$ slowly over iterations:
+$$\alpha = \frac{constant_1}{iteration + constant_2}$$
+
 ### Advanced topics
 
+- Streamlined learning or online learning
+If we have a continuous streamline of data, we may continuously want to optimize our model.
 
-## Application Example: Photo OCR
+An online algorithm keeps repeating forever: getting new examples and update $\theta$. 
+Remarkably, this algorithm can adapt to changes in the data with time.
+For example, we can use it to predict a online store user Click Through Rate; show the articles that the user is likely to click on.
+
+- Map Reduce 
+
+Some ML problems are too big to run into a single computer.
+
+What Jeffrey Dean and Sanjay Ghemawat envisioned is to perform batch-gradient descent split a training set in 4 sets. We will perform the summation of the gradient of each set in a different computer and sum the temporary results to get the total summation.
+
+
+- Data Parallelism
+
+In multi-core machines, we can perform the same approach to each core of the computer.
+
+## Application Example: 
+
+### Photo OCR
+
+- Problem description and pipeline
+
+In a picture we have many different objects. In our problem, we want to do photo recognition of letters in images.
+
+1. Text detection
+2. Character segmentation
+3. Character classification
+4. (Correction system to correct ortographic errors)
+
+We want to design a pipeline that has different machine learning algorithms to have a better overall performance.
+
+- Sliding Windows classifier
+
+We will use a pedestrian detection system. To train our model we have labeled images of the same pixel size with and without a pedestrian.
+To detect the pedestrians in a larger picture, we slide a window with the same aspect ratio and predict whether there are pedestrians or not.
+We need to optimize the different sizes of the patch.
+
+For text detection, we use a labeled training set with positive and negative examples and run the sliding window on the larger picture.
+From our prediction, we **expand** our results whitening the pixels that have whiter pixels at a certain distance.
+To define the text rectangles we apply a threshold on the minimum ratio of the window that we are interested in detecting.
+
+- Character segmentation
+
+Subsequently, we may train another model on the character segmentation training it with the middle of characters in 1 dimension.
+
+- Character recognition
+
+We may now train another model to recognize the letters.
+
+
+### Getting Lots of Data and Artificial Data
+
+When we have not a lot of data to train our algorithm we can synthesize more from real data.
+
+Adam Coates and Tao Wang proposed a way to take the characters from the computer fonts and put them in different backgrounds.
+It takes a lot of work to create synthetic data that resembles the real data.
+
+Another approach is to use a real example and distort it to get more.
+The distortion should be "realistic", not just meaningless random noise.
+
+Note that we should have a low bias classifier first, before expending the effort in creating synthetic examples.
+
+Ways to generate new data:
+- Artificial data synthesis
+- Correct/label myself
+- Crowd source data labeling (e.g. Amazon Mechanical Turk)
+
+### Ceiling Analysis: What Part of the Pipeline to Work on Next
+
+We should have an overall metric of our system. Now, we can check the same metric in each step for the test dataset of the pipeline only giving the correctly classified (ground truth) in each step to quantify the loss of prediction power.
+
